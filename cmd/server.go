@@ -10,6 +10,7 @@ import (
 	ideatag_repository "github.com/yazmeyaa/virtual_ideas_book/internal/repository/idea_tag"
 	ideavote_repository "github.com/yazmeyaa/virtual_ideas_book/internal/repository/idea_vote"
 	user_repository "github.com/yazmeyaa/virtual_ideas_book/internal/repository/user"
+	authentication_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/authentication"
 	idea_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/idea"
 )
 
@@ -65,17 +66,36 @@ func main() {
 
 	log.Info("Successfull started server")
 
-	list, _ := ideaRepo.GetList(common.ListOptions{
-		Limit:  10,
-		Offset: 0,
+	list, _ := ideaService.GetIdeasList(idea_repository.GetIdeaListOptions{
+		ListOptions: common.ListOptions{
+			Limit:  10,
+			Offset: 0,
+		},
 	})
+
+	authService := authentication_service.New(config)
+	token, err := authService.CreateToken(user)
+
+	if err != nil {
+		log.Error("ERROR WHILE GET TOKEN", "error", err.Error())
+		return
+	}
+	log.Info("Token successfull generated", "token", token)
+
+	isTokenValid, err := authService.ValidateToken(token)
+	if err != nil {
+		log.Error("ERROR WHILE VALIDATE TOKEN", "error", err.Error())
+		return
+	}
+
+	log.Info("Is token valid", "valid", isTokenValid)
 
 	for _, idea := range list {
 		log.Info("Idea info",
 			"id", idea.ID,
-			"title", idea.Title,
-			"content", idea.Content,
-			"tags", idea.Tags,
+			// "title", idea.Title,
+			// "content", idea.Content,
+			// "tags", idea.Tags,
 		)
 	}
 }

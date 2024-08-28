@@ -19,6 +19,9 @@ type Config struct {
 	Server struct {
 		Port int
 	}
+	JWT struct {
+		Secret string
+	}
 }
 
 func LoadConfig(configPath string) (*Config, error) {
