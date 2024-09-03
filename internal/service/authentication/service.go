@@ -1,3 +1,4 @@
+// Authentication Service
 package authentication
 
 import "github.com/yazmeyaa/virtual_ideas_book/internal/models"

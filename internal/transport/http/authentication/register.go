@@ -2,6 +2,7 @@ package authentication
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/yazmeyaa/virtual_ideas_book/internal/repository/user"
@@ -30,6 +31,7 @@ func (a *authenticationHandler) Register(w http.ResponseWriter, r *http.Request)
 
 	if err != nil {
 		a.log.Error("Error while register user", "error", err.Error())
+		http.Error(w, fmt.Sprintf("Error while register user: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 

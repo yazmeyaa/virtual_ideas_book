@@ -25,8 +25,14 @@ func (u *userRepository) Create(userDTO CreateUserDTO) (models.User, error) {
 		Email:    userDTO.Email,
 	}
 
+	var email string
+
+	if user.Email != nil {
+		email = *user.Email
+	}
+
 	existingUser := models.User{}
-	if err := u.db.Where("email = ? OR username = ?", *user.Email, user.Username).First(&existingUser).Error; err == nil {
+	if err := u.db.Where("email = ? OR username = ?", email, user.Username).First(&existingUser).Error; err == nil {
 		u.log.Error("[UserRepository.Create] User with the same email or username already exists", "email", user.Email, "username", user.Username)
 		return models.User{}, errors.New("user with the same email or username already exists")
 	}

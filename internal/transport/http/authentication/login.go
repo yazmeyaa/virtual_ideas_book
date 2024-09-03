@@ -9,6 +9,10 @@ import (
 	"github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/authentication/dto/response"
 )
 
+const (
+	AUTH_TOKEN_COOKIE_NAME = "Authorization"
+)
+
 // Login implements AuthenticationHandler.
 func (a *authenticationHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var data request.LoginUserDTO
@@ -63,7 +67,7 @@ func (a *authenticationHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	http.SetCookie(w, &http.Cookie{
-		Name:     "auth_token",
+		Name:     AUTH_TOKEN_COOKIE_NAME,
 		Value:    token,
 		HttpOnly: true,
 		Secure:   true,

@@ -1,7 +1,14 @@
 package main
 
 import (
-	common "github.com/yazmeyaa/virtual_ideas_book/internal/common"
+	"context"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/go-playground/validator/v10"
 	config "github.com/yazmeyaa/virtual_ideas_book/internal/config"
 	database "github.com/yazmeyaa/virtual_ideas_book/internal/database"
 	logger "github.com/yazmeyaa/virtual_ideas_book/internal/logger"
@@ -12,6 +19,10 @@ import (
 	user_repository "github.com/yazmeyaa/virtual_ideas_book/internal/repository/user"
 	authentication_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/authentication"
 	idea_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/idea"
+	user_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/user"
+	auth_controller "github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/authentication"
+	idea_controller "github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/idea"
+	router "github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/router"
 )
 
 func main() {
@@ -37,6 +48,7 @@ func main() {
 	ideaCommentRepo := ideacomment_repository.New(db, log)
 	ideaVoteRepo := ideavote_repository.New(db, log)
 	userRepo := user_repository.New(db, log)
+	validate := validator.New()
 
 	ideaService := idea_service.New(
 		ideaRepo,
@@ -46,56 +58,58 @@ func main() {
 		log,
 	)
 
-	user, err := userRepo.GetByUsername("zmeya")
-
-	if err != nil {
-		log.Warn("Error while create user", "error", err.Error())
-		return
-	}
-
-	log.Info("Created user info",
-		"username", user.Username,
+	authService := authentication_service.New(
+		config,
 	)
 
-	ideaService.CreateIdea(idea_repository.CreateIdeaDTO{
-		Title:       "Test",
-		Description: "Test Description",
-		Content:     "Hello world",
-		UserID:      user.ID,
-	})
+	userService := user_service.New(
+		userRepo,
+		authService,
+	)
 
-	log.Info("Successfull started server")
+	authController := auth_controller.New(
+		userService,
+		authService,
+		log,
+		validate,
+	)
 
-	list, _ := ideaService.GetIdeasList(idea_repository.GetIdeaListOptions{
-		ListOptions: common.ListOptions{
-			Limit:  10,
-			Offset: 0,
-		},
-	})
+	ideaController := idea_controller.New(
+		ideaService,
+	)
 
-	authService := authentication_service.New(config)
-	token, err := authService.CreateToken(user)
+	router := router.NewRouter(
+		authController,
+		ideaController,
+		authService,
+		log,
+	)
 
-	if err != nil {
-		log.Error("ERROR WHILE GET TOKEN", "error", err.Error())
-		return
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	server := &http.Server{
+		Addr:    "0.0.0.0:8080",
+		Handler: router,
 	}
-	log.Info("Token successfull generated", "token", token)
 
-	isTokenValid, err := authService.ValidateToken(token)
-	if err != nil {
-		log.Error("ERROR WHILE VALIDATE TOKEN", "error", err.Error())
-		return
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("Failed to start server:", "error", err.Error())
+		}
+	}()
+
+	log.Info("Server started successfull")
+
+	<-stop
+	log.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Error("Server forced to shutdown: %v", "error", err.Error())
 	}
 
-	log.Info("Is token valid", "valid", isTokenValid)
-
-	for _, idea := range list {
-		log.Info("Idea info",
-			"id", idea.ID,
-			// "title", idea.Title,
-			// "content", idea.Content,
-			// "tags", idea.Tags,
-		)
-	}
+	log.Info("Server exited gracefully")
 }
