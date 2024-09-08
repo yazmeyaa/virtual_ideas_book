@@ -76,6 +76,9 @@ func main() {
 
 	ideaController := idea_controller.New(
 		ideaService,
+		userService,
+		validate,
+		log,
 	)
 
 	router := router.NewRouter(

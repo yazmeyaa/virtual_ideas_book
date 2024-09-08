@@ -81,7 +81,7 @@ func (r *ideaRepository) Delete(ideaId uint) error {
 
 func (r *ideaRepository) GetById(ideaId uint) (models.Idea, error) {
 	idea := models.Idea{}
-	if err := r.db.Where("id = ?", ideaId).First(&idea).Error; err != nil {
+	if err := r.db.Preload("Tags").Where("id = ?", ideaId).First(&idea).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			r.log.Warn("[IdeaRepository.GetById] Idea not found", "ideaId", ideaId)
 			return models.Idea{}, errors.New("idea not found")

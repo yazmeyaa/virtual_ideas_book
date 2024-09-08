@@ -9,4 +9,5 @@ type AuthenticationService interface {
 	ValidatePassword(user models.User, password string) bool
 	HashPassword(password string) (string, error)
 	RefreshToken(oldToken string) (string, error)
+	GetTokenClaims(token string) (*TokenClaims, error)
 }

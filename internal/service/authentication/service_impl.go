@@ -14,15 +14,41 @@ type authenticationService struct {
 	config *config.Config
 }
 
+type TokenClaims struct {
+	UserId uint `json:"userId"`
+	jwt.RegisteredClaims
+}
+
+// GetTokenClaims implements AuthenticationService.
+func (a authenticationService) GetTokenClaims(token string) (*TokenClaims, error) {
+	parsedToken, err := jwt.ParseWithClaims(token, &TokenClaims{}, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(a.config.JWT.Secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := parsedToken.Claims.(*TokenClaims); ok && parsedToken.Valid {
+		return claims, nil
+	}
+
+	return nil, errors.New("invalid token")
+}
+
 func (a authenticationService) CreateToken(user models.User) (string, error) {
-	claims := jwt.MapClaims{
-		"userId": user.ID,
-		"exp":    time.Now().Add(time.Hour * 24).Unix(),
-		"iat":    time.Now().Unix(),
+	claims := TokenClaims{
+		UserId: user.ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	tokenString, err := token.SignedString([]byte(a.config.JWT.Secret))
 	if err != nil {
 		return "", err

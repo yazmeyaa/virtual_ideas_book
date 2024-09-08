@@ -19,6 +19,16 @@ type ideaService struct {
 	log         *slog.Logger
 }
 
+// GetTagById implements IdeaService.
+func (i *ideaService) GetTagById(tagId uint) (models.Tag, error) {
+	return i.tagRepo.GetById(tagId)
+}
+
+// GetById implements IdeaService.
+func (i *ideaService) GetById(id uint) (models.Idea, error) {
+	return i.ideaRepo.GetById(id)
+}
+
 // GetIdeasList implements IdeaService.
 func (i *ideaService) GetIdeasList(options idea_repository.GetIdeaListOptions) ([]models.Idea, error) {
 	return i.ideaRepo.GetList(options.ListOptions)
