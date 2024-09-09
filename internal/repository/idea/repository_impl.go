@@ -96,7 +96,13 @@ func (r *ideaRepository) GetById(ideaId uint) (models.Idea, error) {
 
 func (r *ideaRepository) GetList(options common.ListOptions) ([]models.Idea, error) {
 	var list []models.Idea
-	if err := r.db.Preload("Tags").Offset(options.Offset).Limit(options.Limit).Find(&list).Error; err != nil {
+
+	limit := 20
+	if options.Limit != 0 {
+		limit = options.Limit
+	}
+
+	if err := r.db.Preload("Tags").Offset(options.Offset).Limit(limit).Find(&list).Error; err != nil {
 		r.log.Error("[IdeaRepository.GetList] Error while retrieving ideas list", "error", err.Error())
 		return nil, err
 	}
@@ -107,7 +113,7 @@ func (r *ideaRepository) GetList(options common.ListOptions) ([]models.Idea, err
 
 func (r *ideaRepository) Update(ideaId uint, idea UpdateIdeaDTO) (models.Idea, error) {
 	foundIdea := models.Idea{}
-	if err := r.db.Where("id = ?", ideaId).First(&foundIdea).Error; err != nil {
+	if err := r.db.Preload("Tags").Where("id = ?", ideaId).First(&foundIdea).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			r.log.Warn("[IdeaRepository.Update] Idea not found", "ideaId", ideaId)
 			return models.Idea{}, errors.New("idea not found")
@@ -126,7 +132,10 @@ func (r *ideaRepository) Update(ideaId uint, idea UpdateIdeaDTO) (models.Idea, e
 		foundIdea.Content = idea.Content
 	}
 	if len(idea.Tags) != len(foundIdea.Tags) {
-		foundIdea.Tags = idea.Tags
+		if err := r.db.Model(&foundIdea).Association("Tags").Replace(idea.Tags); err != nil {
+			r.log.Error("[IdeaRepository.Update] Error while updating idea tags", "ideaId", ideaId, "error", err.Error())
+			return models.Idea{}, err
+		}
 	}
 
 	if err := r.db.Save(&foundIdea).Error; err != nil {

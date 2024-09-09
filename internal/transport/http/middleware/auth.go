@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -66,8 +65,6 @@ func AuthMiddleware(next http.Handler, authService authentication_service.Authen
 		}
 
 		userId := tokenClaims.UserId
-
-		fmt.Printf("\n\nSETTING USERID %d", userId)
 
 		ctx := context.WithValue(r.Context(), USER_ID_KEY, userId)
 		next.ServeHTTP(w, r.WithContext(ctx))

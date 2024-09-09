@@ -7,6 +7,7 @@ import (
 )
 
 type GetIdeaByIdResponse struct {
+	ID          uint             `json:"id"`
 	Title       string           `json:"title"`
 	Description string           `json:"description"`
 	Content     string           `json:"content"`
@@ -22,6 +23,7 @@ type GetIdeaByIdTag struct {
 }
 
 func (r *GetIdeaByIdResponse) FromModel(model models.Idea) {
+	r.ID = model.ID
 	r.Title = model.Title
 	r.Description = model.Description
 	r.Content = model.Content
