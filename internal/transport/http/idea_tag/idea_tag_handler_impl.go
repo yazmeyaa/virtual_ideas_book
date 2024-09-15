@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/yazmeyaa/virtual_ideas_book/internal/common"
@@ -41,7 +43,7 @@ func (i *ideaTagHTTPHanlder) Create(w http.ResponseWriter, r *http.Request) {
 				common.WriteError(w, http.StatusBadRequest, "Idea tag with same name already exist")
 			}
 		} else {
-			common.WriteError(w, http.StatusBadRequest, "Unexpected server error.")
+			common.WriteError(w, http.StatusBadRequest, common.UNEXPECTED_ERROR)
 		}
 
 		i.log.Error(fmt.Sprintf("[%s]: %s", fnCreateTag, err.Error()))
@@ -63,7 +65,30 @@ func (i *ideaTagHTTPHanlder) Delete(w http.ResponseWriter, r *http.Request) {
 
 // GetTagById implements IdeaTagHTTPHanlder.
 func (i *ideaTagHTTPHanlder) GetTagById(w http.ResponseWriter, r *http.Request) {
-	panic("unimplemented")
+	vars := mux.Vars(r)
+	idParam, has := vars["id"]
+	if !has {
+		common.WriteError(w, http.StatusInternalServerError, common.UNEXPECTED_ERROR)
+		return
+	}
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		common.WriteError(w, http.StatusBadRequest, "Unexpected value in `id` param.")
+		return
+	}
+
+	tag, err := i.tagService.GetTagByID(uint(id))
+	if err != nil {
+		common.WriteError(w, http.StatusNotFound, "Tag with provided id was not found.")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(tag_response.GetTtagByIdResponseDTO{
+		Name:        tag.Name,
+		Description: tag.Description,
+	})
 }
 
 // GetTags implements IdeaTagHTTPHanlder.

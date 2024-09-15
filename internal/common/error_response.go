@@ -11,6 +11,7 @@ type ErrorResponse struct {
 
 const (
 	UNREACHABLE_BODY_ERROR = "Invalid request payload"
+	UNEXPECTED_ERROR       = "Unexpected server error."
 )
 
 func WriteError(w http.ResponseWriter, code int, err string) {

@@ -45,11 +45,11 @@ func NewRouter(
 
 	ideaTagRouter := v1.PathPrefix("/tag").Subrouter()
 	publicIdeaRouter.StrictSlash(true)
-	ideaTagRouter.HandleFunc("{id}", ideaTagController.GetTagById).Methods("GET")
+	ideaTagRouter.HandleFunc("/{id}", ideaTagController.GetTagById).Methods("GET")
 	ideaTagRouter.HandleFunc("", ideaTagController.GetTags).Methods("GET")
 	ideaTagRouter.HandleFunc("", ideaTagController.Create).Methods("POST")
 	// ideaTagRouter.HandleFunc("/{id}", ideaTagController.Delete).Methods("DELETE")
-	ideaTagRouter.HandleFunc("{id}", ideaTagController.Update).Methods("PATCH")
+	ideaTagRouter.HandleFunc("/{id}", ideaTagController.Update).Methods("PATCH")
 
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info("404 not found.",
