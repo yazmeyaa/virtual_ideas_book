@@ -19,9 +19,11 @@ import (
 	user_repository "github.com/yazmeyaa/virtual_ideas_book/internal/repository/user"
 	authentication_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/authentication"
 	idea_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/idea"
+	ideatag_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/idea_tag"
 	user_service "github.com/yazmeyaa/virtual_ideas_book/internal/service/user"
 	auth_controller "github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/authentication"
 	idea_controller "github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/idea"
+	ideatag_http_handler "github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/idea_tag"
 	router "github.com/yazmeyaa/virtual_ideas_book/internal/transport/http/router"
 )
 
@@ -58,6 +60,10 @@ func main() {
 		log,
 	)
 
+	ideaTagService := ideatag_service.NewTagService(
+		ideatagRepo,
+	)
+
 	authService := authentication_service.New(
 		config,
 	)
@@ -81,9 +87,12 @@ func main() {
 		log,
 	)
 
+	ideaTagController := ideatag_http_handler.New(ideaTagService, log)
+
 	router := router.NewRouter(
 		authController,
 		ideaController,
+		ideaTagController,
 		authService,
 		log,
 	)
